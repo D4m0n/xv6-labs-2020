@@ -107,5 +107,10 @@ sys_trace(void)
 uint64
 sys_sysinfo(void)
 {
-    if (argaddr(0, myproc->))
+    uint64 info;
+
+    if (argaddr(0, &info) < 0)
+        return -1;
+    return systeminfo(info);
 }
+
