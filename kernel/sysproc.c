@@ -103,3 +103,9 @@ sys_trace(void)
         return -1;
     return 0;
 }
+
+uint64
+sys_sysinfo(void)
+{
+    if (argaddr(0, myproc->))
+}
