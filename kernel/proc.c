@@ -245,6 +245,8 @@ userinit(void)
   uvminit(p->pagetable, initcode, sizeof(initcode));
   p->sz = PGSIZE;
 
+  uvmpa(p->pagetable, p->kpagetable, 0, p->sz);
+
   // prepare for the very first "return" from kernel to user.
   p->trapframe->epc = 0;      // user program counter
   p->trapframe->sp = PGSIZE;  // user stack pointer
@@ -270,8 +272,14 @@ growproc(int n)
     if((sz = uvmalloc(p->pagetable, sz, sz + n)) == 0) {
       return -1;
     }
+
+    if (uvmpa(p->pagetable, p->kpagetable, sz-n, sz) < 0)
+        return -1;
   } else if(n < 0){
     sz = uvmdealloc(p->pagetable, sz, sz + n);
+
+    if (n >= PGSIZE)
+        uvmunmap(p->kpagetable, PGROUNDUP(sz), n / PGSIZE, 0);
   }
   p->sz = sz;
   return 0;
@@ -298,6 +306,9 @@ fork(void)
     return -1;
   }
   np->sz = p->sz;
+
+  if (uvmpa(np->pagetable, np->kpagetable, 0, np->sz) < 0)
+    return -1;
 
   np->parent = p;
 
@@ -692,7 +703,7 @@ either_copyin(void *dst, int user_src, uint64 src, uint64 len)
 {
   struct proc *p = myproc();
   if(user_src){
-    return copyin(p->pagetable, dst, src, len);
+    return copyin_new(p->pagetable, dst, src, len);
   } else {
     memmove(dst, (char*)src, len);
     return 0;

@@ -386,6 +386,26 @@ uvmclear(pagetable_t pagetable, uint64 va)
   *pte &= ~PTE_U;
 }
 
+int
+uvmpa(pagetable_t user_pgtbl, pagetable_t kernel_pgtbl, uint64 old_size, uint64 new_size)
+{
+	pte_t *user_pte, *kernel_pte;
+
+	if ((new_size < old_size) || (PGROUNDUP(new_size) >= PLIC))
+		return -1;
+
+	for (uint64 va = PGROUNDUP(old_size); va < new_size; va += PGSIZE)
+    {
+		if ((user_pte = walk(user_pgtbl, va, 0)) == 0)
+			panic("user pte not exist");
+		if ((kernel_pte = walk(kernel_pgtbl, va, 1)) == 0)
+			panic("kernel pte not exist");
+		*kernel_pte = (*user_pte) & (~PTE_U);
+	}
+
+	return 0;
+}
+
 // Copy from kernel to user.
 // Copy len bytes from src to virtual address dstva in a given page table.
 // Return 0 on success, -1 on error.
