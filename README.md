@@ -5,4 +5,4 @@
 ☑️ [Lab pgtbl: Page tables (Done)](https://github.com/D4m0n/xv6-labs-2020/tree/pgtbl)  
 ☑️ [Lab traps: Trap (Done)](https://github.com/D4m0n/xv6-labs-2020/tree/traps)  
 ☑️ [Lab lazy: Lazy allocation (Done)](https://github.com/D4m0n/xv6-labs-2020/tree/lazy)  
-☑️ [Lab cow: Copy-on-write fork (In-progress)](https://github.com/D4m0n/xv6-labs-2020/tree/cow)
+☑️ [Lab cow: Copy-on-write fork (Done)](https://github.com/D4m0n/xv6-labs-2020/tree/cow)
