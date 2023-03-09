@@ -14,6 +14,9 @@ void freerange(void *pa_start, void *pa_end);
 extern char end[]; // first address after kernel.
                    // defined by kernel.ld.
 
+int refcnt[PHYSTOP / PGSIZE] = {0};
+int init = 0;
+
 struct run {
   struct run *next;
 };
@@ -23,11 +26,42 @@ struct {
   struct run *freelist;
 } kmem;
 
+void incref(uint64 pa)
+{
+    uint ppn;
+
+    if (pa >= PHYSTOP)
+        panic("incref");
+
+    ppn = pa / PGSIZE;
+
+    acquire(&kmem.lock);
+    refcnt[ppn]++;
+    release(&kmem.lock);
+}
+
+void decref(uint64 pa)
+{
+    uint ppn;
+
+    if (pa >= PHYSTOP)
+        panic("decref");
+
+    ppn = pa / PGSIZE;
+
+    acquire(&kmem.lock);
+    refcnt[ppn]--;
+    release(&kmem.lock);
+}
+
 void
 kinit()
 {
   initlock(&kmem.lock, "kmem");
+  init = 1;
   freerange(end, (void*)PHYSTOP);
+  memset(refcnt, 0, sizeof(refcnt));
+  init = 0;
 }
 
 void
@@ -36,7 +70,11 @@ freerange(void *pa_start, void *pa_end)
   char *p;
   p = (char*)PGROUNDUP((uint64)pa_start);
   for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE)
+  {
+    if (init)
+        refcnt[(uint64)p / PGSIZE] = 1;
     kfree(p);
+  }
 }
 
 // Free the page of physical memory pointed at by v,
@@ -47,9 +85,21 @@ void
 kfree(void *pa)
 {
   struct run *r;
-
+  uint ppn;
+  
   if(((uint64)pa % PGSIZE) != 0 || (char*)pa < end || (uint64)pa >= PHYSTOP)
     panic("kfree");
+  
+  ppn = (uint64)pa / PGSIZE;
+
+  if (refcnt[ppn] < 1)
+      panic("double free");
+
+  decref((uint64)pa);
+
+
+  if (refcnt[ppn] > 0)
+      return;
 
   // Fill with junk to catch dangling refs.
   memset(pa, 1, PGSIZE);
@@ -69,14 +119,23 @@ void *
 kalloc(void)
 {
   struct run *r;
+  uint ppn;
 
   acquire(&kmem.lock);
   r = kmem.freelist;
   if(r)
+  {
+    ppn = (uint64)r / PGSIZE;
+    if (refcnt[ppn] != 0)
+        panic("kalloc: alredy allocated");
+    refcnt[ppn]++;
     kmem.freelist = r->next;
+  }
   release(&kmem.lock);
+
 
   if(r)
     memset((char*)r, 5, PGSIZE); // fill with junk
+
   return (void*)r;
 }

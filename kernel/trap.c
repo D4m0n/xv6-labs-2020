@@ -65,6 +65,12 @@ usertrap(void)
     intr_on();
 
     syscall();
+  } else if(r_scause() == 15) {
+      if (uvmcow(p->pagetable, PGROUNDDOWN(r_stval())) < 0)
+      {
+        printf("cow failed\n");
+        p->killed = 1;
+      }
   } else if((which_dev = devintr()) != 0){
     // ok
   } else {
