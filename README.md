@@ -9,5 +9,5 @@
 ☑️ [Lab thread: Multithreading (Done)](https://github.com/D4m0n/xv6-labs-2020/tree/thread)  
 ☑️ [Lab lock: Parallelism/locking (Done)](https://github.com/D4m0n/xv6-labs-2020/tree/lock)  
 ☑️ [Lab fs: File System (Done)](https://github.com/D4m0n/xv6-labs-2020/tree/fs)  
-☑️ [Lab mmap: Mmap (In progress)](https://github.com/D4m0n/xv6-labs-2020/tree/mmap)  
+☑️ [Lab mmap: Mmap (Done)](https://github.com/D4m0n/xv6-labs-2020/tree/mmap)  
 ☑️ [Lab net: Network stack (In progress)](https://github.com/D4m0n/xv6-labs-2020/tree/net)
