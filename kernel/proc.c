@@ -48,6 +48,7 @@ procinit(void)
   for(p = proc; p < &proc[NPROC]; p++) {
       initlock(&p->lock, "proc");
       p->kstack = KSTACK((int) (p - proc));
+      memset(p->vma, 0, sizeof(p->vma));
   }
 }
 
@@ -296,8 +297,15 @@ fork(void)
       np->ofile[i] = filedup(p->ofile[i]);
   np->cwd = idup(p->cwd);
 
-  safestrcpy(np->name, p->name, sizeof(p->name));
+  for (int idx = 0; idx < MAXVMA; idx++) {
+    if (p->vma[idx].used) {
+      memmove(&np->vma[idx], &p->vma[idx], sizeof(struct VMA));
+      filedup(p->vma[idx].fp);
+    }
+  }
 
+  safestrcpy(np->name, p->name, sizeof(p->name));
+  
   pid = np->pid;
 
   np->state = RUNNABLE;
@@ -340,6 +348,7 @@ void
 exit(int status)
 {
   struct proc *p = myproc();
+  struct VMA *v;
 
   if(p == initproc)
     panic("init exiting");
@@ -350,6 +359,14 @@ exit(int status)
       struct file *f = p->ofile[fd];
       fileclose(f);
       p->ofile[fd] = 0;
+    }
+  }
+
+  for (int idx = 0; idx < MAXVMA; idx++) {
+    v = &p->vma[idx];
+    if (v->used) {
+      uvmunmap(p->pagetable, v->start, v->length/PGSIZE, 1);
+      memset(v, 0, sizeof(struct VMA));
     }
   }
 
